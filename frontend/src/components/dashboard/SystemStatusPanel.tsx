@@ -1,4 +1,3 @@
-
 import { useDashboard } from "@/context/DashboardContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -6,6 +5,7 @@ import GaugeChart from "./GaugeChart";
 import RadarChart from "./RadarChart";
 import { AlertTriangleIcon, CheckCircleIcon } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
+import ApiStatus from "../ApiStatus";
 
 export const SystemStatusPanel = () => {
   const { prediction, isLoading } = useDashboard();
@@ -89,6 +89,11 @@ export const SystemStatusPanel = () => {
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Monitoring Status</span>
               <StatusBadge status="normal" className="px-3" />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Backend API</span>
+              <ApiStatus />
             </div>
           </div>
         </CardContent>

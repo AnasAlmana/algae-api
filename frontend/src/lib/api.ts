@@ -1,8 +1,26 @@
-
 import axios from "axios";
 import { toast } from "sonner";
 
-const API_URL = "http://localhost:8000/api/v1";
+// Create an axios instance with a base URL pointing to the backend API
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
+const api = axios.create({
+  baseURL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 10000, // 10 seconds
+});
+
+// Add response interceptor for error handling
+api.interceptors.response.use(
+  response => response,
+  error => {
+    // Log errors or handle them globally
+    console.error('API Error:', error);
+    return Promise.reject(error);
+  }
+);
 
 // Interface for sensor input data
 export interface SensorData {
@@ -67,7 +85,7 @@ export interface SensorWithStatus {
 // Check API health
 export const checkApiHealth = async (): Promise<boolean> => {
   try {
-    const response = await axios.get(`${API_URL}/health`);
+    const response = await api.get("/health");
     return response.status === 200;
   } catch (error) {
     console.error("API health check failed:", error);
@@ -78,7 +96,7 @@ export const checkApiHealth = async (): Promise<boolean> => {
 // Get predictions from the API
 export const getPrediction = async (sensorData: SensorData): Promise<PredictionResponse> => {
   try {
-    const response = await axios.post(`${API_URL}/predict`, sensorData);
+    const response = await api.post("/predict", sensorData);
     return response.data;
   } catch (error) {
     console.error("Failed to get prediction:", error);
@@ -325,3 +343,5 @@ export const getSensorDisplayName = (sensorKey: string): string => {
   const { name } = formatSensorId(sensorKey);
   return name;
 };
+
+export default api;
