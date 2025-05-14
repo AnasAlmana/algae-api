@@ -86,7 +86,7 @@ export interface SensorWithStatus {
 export const checkApiHealth = async (): Promise<boolean> => {
   try {
     const response = await api.get("/health");
-    return response.status === 200;
+    return response.status === 200 && response.data?.status === "healthy";
   } catch (error) {
     console.error("API health check failed:", error);
     return false;
@@ -128,39 +128,29 @@ export const getSensorStatus = (
 
 // Mock data generation for demonstration
 export const generateMockSensorData = (): SensorData => {
-  // Base values
-  const baseSensorData: SensorData = {
-    algae_type: "Chlorella",
-    temperature_C: 28.0,
-    "humidity_%": 65.0,
-    pH: 7.2,
-    light_intensity_umol_m2_s: 1200.0,
-    light_intensity_lux: 18000.0,
-    water_level_cm: 48.0,
-    dissolved_oxygen_mg_per_L: 8.0,
-    conductivity_uS_cm: 600.0,
-    turbidity_NTU: 2.5,
-    chlorophyll_a_ug_per_L: 38.0,
-    CO2_flow_rate_mL_per_min: 95.0,
-    aeration_rate_L_per_min: 2.1,
-    optical_density_680nm: 0.9,
-    photosynthetic_efficiency_pct: 28.0,
-    biomass_concentration_g_per_L: 4.0,
-    nitrate_mg_per_L: 4.5,
-    phosphate_mg_per_L: 0.9,
-    ammonium_mg_per_L: 1.0
-  };
-  
-  // Add random variation to each value (±10%)
-  return Object.entries(baseSensorData).reduce((acc, [key, value]) => {
-    if (typeof value === 'number') {
-      const variation = (Math.random() * 0.2) - 0.1; // -10% to +10%
-      acc[key as keyof SensorData] = Number((value * (1 + variation)).toFixed(2)) as never;
-    } else {
-      acc[key as keyof SensorData] = value as never;
-    }
-    return acc;
-  }, {} as SensorData);
+  console.warn("Mock data generation should not be used in production");
+  // Return empty object with required structure
+  return {
+    algae_type: "unknown",
+    temperature_C: 0,
+    "humidity_%": 0,
+    pH: 0,
+    light_intensity_umol_m2_s: 0,
+    light_intensity_lux: 0,
+    water_level_cm: 0,
+    dissolved_oxygen_mg_per_L: 0,
+    conductivity_uS_cm: 0,
+    turbidity_NTU: 0,
+    chlorophyll_a_ug_per_L: 0,
+    CO2_flow_rate_mL_per_min: 0,
+    aeration_rate_L_per_min: 0,
+    optical_density_680nm: 0,
+    photosynthetic_efficiency_pct: 0,
+    biomass_concentration_g_per_L: 0,
+    nitrate_mg_per_L: 0,
+    phosphate_mg_per_L: 0,
+    ammonium_mg_per_L: 0
+  } as SensorData;
 };
 
 // Sensor thresholds for each sensor type

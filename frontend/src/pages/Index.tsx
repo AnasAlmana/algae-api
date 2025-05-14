@@ -2,7 +2,7 @@ import { DashboardProvider } from "@/context/DashboardContext";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import SystemStatusPanel from "@/components/dashboard/SystemStatusPanel";
 import SensorPanel from "@/components/dashboard/SensorPanel";
-import SensorForm from "@/components/SensorForm";
+import RawDataViewer from "@/components/RawDataViewer";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,7 +22,7 @@ const Index = () => {
                 <TabsTrigger value="sensors">Real-time Sensors</TabsTrigger>
                 <TabsTrigger value="history">Historical Data</TabsTrigger>
                 <TabsTrigger value="controls">System Controls</TabsTrigger>
-                <TabsTrigger value="api-test">API Testing</TabsTrigger>
+                <TabsTrigger value="api-test">API Data Viewer</TabsTrigger>
               </TabsList>
               
               <TabsContent value="sensors" className="space-y-4">
@@ -54,9 +54,11 @@ const Index = () => {
               </TabsContent>
               
               <TabsContent value="api-test">
-                <div className="flex justify-center">
-                  <SensorForm />
-                </div>
+                <Card>
+                  <CardContent className="pt-6">
+                    <RawDataViewer />
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </main>

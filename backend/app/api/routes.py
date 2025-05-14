@@ -4,22 +4,45 @@ from app.schemas.system_status import SystemStatusInput, SystemStatusResponse
 
 router = APIRouter()
 
+# Store the latest input and prediction data
+latest_input_data = None
+latest_prediction_result = None
 
 @router.post("/predict", response_model=SystemStatusResponse)
 async def predict(input_data: SystemStatusInput):
+    global latest_input_data, latest_prediction_result
+    
     try:
         results = predict_system_status(input_data.dict())
-        return SystemStatusResponse(
+        response = SystemStatusResponse(
             sensor_faults=results["sensor_faults"],
             sensor_explanations=results["sensor_explanations"],
             row_anomaly=bool(results["row_anomaly"]),
             row_score=results["row_score"],
             row_top_features=results["row_top_features"]
         )
+        
+        # Store the latest data
+        latest_input_data = input_data
+        latest_prediction_result = response
+        
+        return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
 
 @router.get("/health")
 async def health_check():
-    return {"status": "healthy"} 
+    return {"status": "healthy"}
+
+
+@router.get("/latest-prediction")
+async def get_latest_prediction():
+    """Get the latest input data and prediction result received by the API"""
+    if latest_input_data is None or latest_prediction_result is None:
+        raise HTTPException(status_code=404, detail="No prediction data available yet")
+    
+    return {
+        "input_data": latest_input_data,
+        "prediction_result": latest_prediction_result
+    } 

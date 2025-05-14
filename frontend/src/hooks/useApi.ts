@@ -1,17 +1,18 @@
 import { useMutation, useQuery, UseMutationOptions, UseQueryOptions } from '@tanstack/react-query';
 import api from '../lib/api';
 import { SensorData, PredictionResponse } from '../lib/api';
+import { QueryKey } from '@tanstack/react-query';
 
 /**
  * Hook for checking API health status
  */
-export const useApiHealthCheck = (options?: UseQueryOptions<boolean, Error>) => {
-  return useQuery({
+export const useApiHealthCheck = (options: Partial<UseQueryOptions<boolean, Error, boolean, QueryKey>> = {}) => {
+  return useQuery<boolean, Error, boolean, QueryKey>({
     queryKey: ['apiHealth'],
     queryFn: async () => {
       try {
         const response = await api.get('/health');
-        return response.status === 200;
+        return response.status === 200 && response.data?.status === "healthy";
       } catch (error) {
         console.error('API health check failed:', error);
         return false;

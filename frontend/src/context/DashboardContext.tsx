@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { toast as sonnerToast } from "sonner";
 import { 
@@ -9,10 +8,13 @@ import {
   formatSensorId, 
   getSensorStatus, 
   sensorThresholds,
-  generateMockSensorData,
   getPrediction,
-  formatSensorValue
+  formatSensorValue,
+  checkApiHealth
 } from '@/lib/api';
+import { useApiHealthCheck } from '@/hooks/useApi';
+import api from '@/lib/api';
+import type { ReactNode } from 'react';
 
 interface DashboardContextType {
   sensorData: SensorData | null;
@@ -41,22 +43,35 @@ export const useDashboard = () => {
 };
 
 interface DashboardProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }) => {
+// Define endpoint to get the last received data from the backend
+const LAST_DATA_ENDPOINT = "/latest-prediction";
+
+export const DashboardProvider = ({ children }: DashboardProviderProps) => {
   const [sensorData, setSensorData] = useState<SensorData | null>(null);
   const [prediction, setPrediction] = useState<PredictionResponse | null>(null);
   const [formattedSensors, setFormattedSensors] = useState<SensorWithStatus[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isApiConnected, setIsApiConnected] = useState<boolean>(true); // Assume connected initially
+  const [isApiConnected, setIsApiConnected] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [enableAlerts, setEnableAlerts] = useState<boolean>(true);
   const [isPolling, setIsPolling] = useState<boolean>(true);
-  const [pollingInterval, setPollingInterval] = useState<number>(30000); // 30 seconds default
+  const [pollingInterval, setPollingInterval] = useState<number>(5000); // Poll every 5 seconds to catch changes
   const [previousFaults, setPreviousFaults] = useState<string[]>([]);
   
   const { toast } = useToast();
+  
+  // Use our API health check hook to monitor backend connection
+  const apiHealthCheck = useApiHealthCheck({
+    refetchInterval: 15000, // Check every 15 seconds
+  });
+  
+  // Set API connection status based on health check
+  useEffect(() => {
+    setIsApiConnected(apiHealthCheck.data === true);
+  }, [apiHealthCheck.data]);
 
   // Helper to format sensor data into display format
   const formatSensorData = (data: SensorData, prediction: PredictionResponse | null) => {
@@ -119,47 +134,61 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
     setPreviousFaults(currentFaults);
   };
 
-  // Process and update data
-  const processData = async (data: SensorData) => {
+  // Fetch the latest data from the backend API
+  const fetchLatestData = async () => {
     try {
-      // Make API request in a try-catch to handle network issues
-      const predictionResult = await getPrediction(data);
+      if (!isApiConnected) {
+        throw new Error("API not connected");
+      }
       
-      // Check for new faults or anomalies
-      checkForNewFaults(
-        predictionResult.sensor_faults,
-        predictionResult.row_anomaly,
-        predictionResult.row_score
-      );
+      // Try to get the latest received data from the backend
+      console.log("Fetching latest data from backend...");
+      const response = await api.get(LAST_DATA_ENDPOINT);
       
-      // Update state with new data
-      setSensorData(data);
-      setPrediction(predictionResult);
-      setFormattedSensors(formatSensorData(data, predictionResult));
-      setLastUpdated(new Date());
-      setIsApiConnected(true);
+      if (response.data) {
+        const { input_data, prediction_result } = response.data;
+        
+        console.log("Received data from backend:", input_data);
+        
+        // Update state with received data
+        setSensorData(input_data);
+        setPrediction(prediction_result);
+        setFormattedSensors(formatSensorData(input_data, prediction_result));
+        setLastUpdated(new Date());
+        
+        // Check for faults or anomalies
+        checkForNewFaults(
+          prediction_result.sensor_faults,
+          prediction_result.row_anomaly,
+          prediction_result.row_score
+        );
+        
+        return true;
+      }
       
+      return false;
     } catch (error) {
-      console.error("Failed to process data:", error);
-      setIsApiConnected(false);
-      
-      // Still update the UI with the sensor data we have, marking API as disconnected
-      setSensorData(data);
-      setFormattedSensors(formatSensorData(data, null));
-      setLastUpdated(new Date());
+      console.error("Failed to fetch latest data:", error);
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Main function to refresh data (both automatic and manual)
+  // Main function to refresh data
   const refreshData = async () => {
     setIsLoading(true);
     
-    // Generate mock data since we don't have a real API to connect to
-    const mockData = generateMockSensorData();
+    // Get data from the backend API
+    const success = await fetchLatestData();
     
-    await processData(mockData);
+    if (!success) {
+      // Handle failure to get data
+      sonnerToast.error("Failed to get data from the backend", {
+        description: "Please check API connection and make sure the simulator is running",
+      });
+      setIsLoading(false);
+    }
   };
 
   // Set up automatic polling
@@ -176,7 +205,7 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
     
     // Clean up on unmount
     return () => clearInterval(intervalId);
-  }, [isPolling, pollingInterval]);
+  }, [isPolling, pollingInterval, isApiConnected]);
 
   const value = {
     sensorData,

@@ -3,12 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import GaugeChart from "./GaugeChart";
 import RadarChart from "./RadarChart";
-import { AlertTriangleIcon, CheckCircleIcon } from "lucide-react";
+import { AlertTriangleIcon, CheckCircleIcon, WifiOffIcon } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
 import ApiStatus from "../ApiStatus";
 
 export const SystemStatusPanel = () => {
-  const { prediction, isLoading } = useDashboard();
+  const { prediction, isLoading, isApiConnected } = useDashboard();
   
   // Format the row top features for the radar chart
   const rowTopFeatures = prediction?.row_top_features
@@ -23,6 +23,15 @@ export const SystemStatusPanel = () => {
   
   // Get system status colors and text
   const getSystemStatusContent = () => {
+    if (!isApiConnected) {
+      return {
+        icon: <WifiOffIcon size={24} className="text-orange-500" />,
+        title: "Backend Connection Lost",
+        message: "Please check API connection",
+        color: "bg-orange-100 dark:bg-orange-950/30"
+      };
+    }
+    
     if (isLoading) {
       return {
         icon: <AlertTriangleIcon size={24} className="text-gray-500" />,
@@ -71,7 +80,7 @@ export const SystemStatusPanel = () => {
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">System Status</span>
               <StatusBadge 
-                status={hasAnomaly ? "fault" : "normal"} 
+                status={!isApiConnected ? "warning" : (hasAnomaly ? "fault" : "normal")} 
                 className="px-3"
               />
             </div>
@@ -88,7 +97,7 @@ export const SystemStatusPanel = () => {
             
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Monitoring Status</span>
-              <StatusBadge status="normal" className="px-3" />
+              <StatusBadge status={isApiConnected ? "normal" : "fault"} className="px-3" />
             </div>
             
             <div className="flex items-center justify-between">
