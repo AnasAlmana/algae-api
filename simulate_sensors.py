@@ -4,15 +4,15 @@ import json
 import pandas as pd
 from datetime import datetime
 import os
+import argparse
 
-
-# API endpoint
+# API endpoints
 API_URL = "http://localhost:8000/api/v1/predict"
 HEALTH_URL = "http://localhost:8000/api/v1/health"
 LATEST_URL = "http://localhost:8000/api/v1/latest-prediction"
 
 # CSV data file path
-CSV_FILE = "normal_rows_test_data.csv"
+CSV_FILE = "Algae_Anomaly_Test_Data.csv"
 
 def check_api_health():
     """Check if the API is up and running"""
@@ -67,82 +67,75 @@ def load_csv_data():
 def row_to_dict(row):
     """Convert DataFrame row to dictionary, handling NaN values"""
     row_dict = row.to_dict()
-    # Replace NaN values with None
     for key, value in row_dict.items():
         if pd.isna(value):
             row_dict[key] = None
     return row_dict
 
-def main():
+def main(selected_row=None):
     """Main function to run the simulation"""
     print("Starting sensor simulation from CSV file...")
-    print(f"Sending data to {API_URL} every 30 seconds")
+    print(f"Sending data to {API_URL}")
     print("-" * 50)
     
-    # Check API health first
     if not check_api_health():
         print("ERROR: API is not running or health check failed.")
-        print("Please make sure the backend server is running.")
         return
     
-    # Verify latest-prediction endpoint
-    print("Checking latest-prediction endpoint...")
-    has_latest_endpoint = verify_latest_data()
-    if not has_latest_endpoint:
-        print("WARNING: latest-prediction endpoint not available or no data yet.")
-        print("The frontend may not be able to get the latest data.")
-    else:
+    if verify_latest_data():
         print("Latest-prediction endpoint verified!")
+    else:
+        print("WARNING: latest-prediction endpoint not available or empty.")
     
-    # Load test data from CSV
     try:
         test_data = load_csv_data()
     except Exception as e:
         print(f"Failed to load CSV file: {str(e)}")
         return
-    
-    # Track current row index
-    row_index = 0
+
     total_rows = len(test_data)
-    
-    # Run the simulation, cycling through the rows
-    while True:
-        # Get current timestamp
+
+    if selected_row is not None:
+        if selected_row < 0 or selected_row >= total_rows:
+            print(f"Invalid row index: {selected_row}. Must be between 0 and {total_rows - 1}.")
+            return
+        row_indices = [selected_row]
+    else:
+        row_indices = list(range(total_rows))
+
+    for row_index in row_indices:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"\n[{timestamp}] Sending row {row_index + 1} of {total_rows}")
         
-        # Get the current row as a dictionary
         sensor_data = row_to_dict(test_data.iloc[row_index])
         
-        # Print a sample of the data
         print("Sample data:")
         for key in ['temperature_C', 'pH', 'dissolved_oxygen_mg_per_L']:
             if key in sensor_data:
                 print(f"  {key}: {sensor_data[key]}")
         
-        # Send to API
         print("\nSending to API...")
         success = send_to_api(sensor_data)
         
         if success:
-            print("\nData sent successfully!")
+            print("Data sent successfully!")
         else:
-            print("\nFailed to send data.")
+            print("Failed to send data.")
         
-        # Move to the next row, cycling back to start if needed
-        row_index = (row_index + 1) % total_rows
-        
+        if selected_row is not None:
+            break  # only send one row if specified
+
         print("-" * 50)
-        
-        # Wait for 30 seconds
-        time.sleep(30)
+        time.sleep(5)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Send sensor data from CSV to anomaly detection API")
+    parser.add_argument('--row', type=int, help="Row index to send (0-based)")
+    args = parser.parse_args()
+
     try:
-        main()
+        main(selected_row=args.row)
     except KeyboardInterrupt:
         print("\nSimulation stopped by user.")
-        print("Exiting gracefully...")
     except Exception as e:
         print(f"Error: {str(e)}")
-        print("Simulation terminated due to an error.") 

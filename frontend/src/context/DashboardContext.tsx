@@ -75,22 +75,18 @@ export const DashboardProvider = ({ children }: DashboardProviderProps) => {
 
   // Helper to format sensor data into display format
   const formatSensorData = (data: SensorData, prediction: PredictionResponse | null) => {
+    const backendFaults = prediction?.sensor_faults || [];
     return Object.entries(data).map(([key, value]) => {
       // Skip algae type as it's not a sensor
       if (key === 'algae_type') return null;
-      
       const { id, name } = formatSensorId(key);
       const threshold = sensorThresholds[key];
-      
       if (!threshold) return null;
-      
-      const faults = prediction?.sensor_faults || [];
-      const status = getSensorStatus(
-        value as number, 
-        threshold, 
-        faults
-      );
-      
+      // Only use backend-reported faults for status
+      let status: 'normal' | 'warning' | 'fault' = 'normal';
+      if (backendFaults.includes(key)) {
+        status = 'fault';
+      }
       return {
         id: key,
         name,

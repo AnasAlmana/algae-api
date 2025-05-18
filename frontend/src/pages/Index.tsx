@@ -2,7 +2,7 @@ import { DashboardProvider } from "@/context/DashboardContext";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import SystemStatusPanel from "@/components/dashboard/SystemStatusPanel";
 import SensorPanel from "@/components/dashboard/SensorPanel";
-import RawDataViewer from "@/components/RawDataViewer";
+import { RawDataViewer } from "@/components/RawDataViewer";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,7 +53,7 @@ const Index = () => {
                 </Card>
               </TabsContent>
               
-              <TabsContent value="api-test">
+              <TabsContent value="api-test" className="space-y-4">
                 <Card>
                   <CardContent className="pt-6">
                     <RawDataViewer />

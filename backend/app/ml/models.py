@@ -48,9 +48,14 @@ def _extract_shap_row(values, n_feat):
     raise ValueError(f"Unsupported SHAP shape: {values.shape}")
 
 # -------- Combined system prediction --------
-def predict_system_status(input_json: dict, top_n: int = 3):
+def predict_system_status(input_json: dict, top_n: int = 3, anomaly_threshold: float = None):
     """
     Runs both the sensor fault model and the row anomaly model.
+
+    Args:
+        input_json: Dictionary containing sensor readings
+        top_n: Number of top features to return in explanations
+        anomaly_threshold: Custom threshold for anomaly detection (if None, uses model default)
 
     Returns:
         dict with keys:
@@ -103,7 +108,18 @@ def predict_system_status(input_json: dict, top_n: int = 3):
 
     X_scaled = row_scaler.transform(row_df)
     base_score = float(row_model.decision_function(X_scaled)[0])
-    anomaly_flag = int(row_model.predict(X_scaled)[0])
+    
+    # If any sensor fault is detected, force row anomaly and set score to 0
+    if faulty_sensors:
+        base_score = 0.0  # Set score to 0 to indicate severe anomaly
+        anomaly_flag = 1  # Force anomaly flag to 1
+    else:
+        # Use custom threshold if provided, otherwise use model's default
+        if anomaly_threshold is not None:
+            # Invert the logic: values below threshold are anomalies
+            anomaly_flag = int(base_score < anomaly_threshold)
+        else:
+            anomaly_flag = int(row_model.predict(X_scaled)[0])
 
     influences = {}
     row_orig = row_df.iloc[0].copy()
