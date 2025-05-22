@@ -9,4 +9,10 @@ services:
       - ./models:/app/app/ml/models
     env_file:
       - .env
-    restart: unless-stopped 
+    restart: unless-stopped
+    networks:
+      - algae-network
+
+networks:
+  algae-network:
+    driver: bridge 

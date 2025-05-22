@@ -54,8 +54,6 @@ This document explains how to run and connect the frontend application to the ba
 2. Install dependencies:
    ```bash
    npm install
-   # or
-   yarn
    ```
 
 3. Configure environment variables:
@@ -67,8 +65,6 @@ This document explains how to run and connect the frontend application to the ba
 4. Start the development server:
    ```bash
    npm run dev
-   # or
-   yarn dev
    ```
 
    The frontend will be available at http://localhost:5173
