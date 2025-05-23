@@ -7,11 +7,7 @@ A full-stack application for monitoring and detecting anomalies in algae cultiva
 - Docker and Docker Compose
 - Git
 
-## Download the models
-Download the models from below URL and place it inside `backend/models`
-```
-https://drive.google.com/drive/folders/1KtZXuuzmEranx2OsKipNIPDKKde-yzvB?usp=sharing
-```
+
 ## Quick Start
 
 1. Clone the repository:
